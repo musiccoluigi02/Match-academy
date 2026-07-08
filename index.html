@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Match Accademico</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          display: ['"Space Grotesk"', 'sans-serif'],
+          body: ['"Inter"', 'sans-serif'],
+        },
+        colors: {
+          ink: '#161322',
+          paper: '#F6F5F2',
+          accent: {
+            DEFAULT: '#5B4CFF',
+            dark: '#4438D6',
+          },
+          mint: '#1FB88A',
+          coral: '#FF6B57',
+        },
+      },
+    },
+  };
+</script>
+
+<style>
+  body { font-family: 'Inter', sans-serif; }
+  h1, h2, h3, .font-display { font-family: 'Space Grotesk', sans-serif; }
+  .timer-bar { transition: width 1s linear, background-color 0.3s ease; }
+  @keyframes fadeSlideIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .card-in { animation: fadeSlideIn 0.35s ease forwards; }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-thumb { background: #d8d5f0; border-radius: 999px; }
+</style>
+</head>
+
+<body class="bg-[#EDEBFB] text-ink font-body min-h-screen">
+
+  <div class="max-w-md mx-auto min-h-screen bg-paper shadow-2xl relative overflow-x-hidden">
+
+    <header class="sticky top-0 z-30 bg-paper/90 backdrop-blur border-b border-ink/5 px-5 pt-5 pb-3 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <div class="w-8 h-8 rounded-xl bg-accent flex items-center justify-center text-white font-display font-bold text-sm">MA</div>
+        <span class="font-display font-semibold text-lg">Match Accademico</span>
+      </div>
+      <button id="btn-reset-onboarding" title="Cambia profilo" class="hidden text-xs text-ink/40 hover:text-ink/70 underline decoration-dotted">
+        profilo
+      </button>
+    </header>
+
+    <section id="screen-onboarding" class="px-6 pt-6 pb-10 hidden">
+      <h1 class="text-2xl font-display font-bold leading-tight mb-1">Trova chi studia<br>la tua materia.</h1>
+      <p class="text-ink/60 text-sm mb-8">Seleziona i tuoi dati dall'elenco (caricato dal database), poi premi il pulsante per registrarti.</p>
+
+      <div id="onboarding-loading" class="text-center py-8 text-sm text-ink/50">
+        <p>Caricamento opzioni in corso...</p>
+      </div>
+
+      <form id="form-onboarding" class="space-y-5 hidden">
+
+        <div>
+          <label class="block text-sm font-semibold mb-1.5" for="input-username">Username Telegram</label>
+          <div class="flex items-center rounded-2xl border border-ink/10 bg-white focus-within:ring-2 focus-within:ring-accent overflow-hidden">
+            <span class="pl-4 text-ink/40">@</span>
+            <input id="input-username" type="text" required placeholder="luigimed"
+                   class="w-full py-3 pr-4 pl-1 bg-transparent outline-none text-sm">
+          </div>
+          <p class="text-xs text-ink/40 mt-1">Senza la @, es. <span class="font-medium">luigimed</span></p>
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold mb-1.5" for="input-universita">Università</label>
+          <select id="input-universita" required
+                  class="w-full py-3 px-4 rounded-2xl border border-ink/10 bg-white outline-none text-sm focus:ring-2 focus:ring-accent">
+            <option value="" disabled selected>Caricamento università...</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold mb-1.5" for="input-materia">Materia che stai studiando</label>
+          <select id="input-materia" required
+                  class="w-full py-3 px-4 rounded-2xl border border-ink/10 bg-white outline-none text-sm focus:ring-2 focus:ring-accent">
+            <option value="" disabled selected>Caricamento materie...</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="block text-sm font-semibold mb-1.5" for="input-professore">Professore della materia</label>
+          <select id="input-professore" required
+                  class="w-full py-3 px-4 rounded-2xl border border-ink/10 bg-white outline-none text-sm focus:ring-2 focus:ring-accent">
+            <option value="" disabled selected>Caricamento professori...</option>
+          </select>
+        </div>
+
+        <button type="submit" id="btn-trova-buddy"
+                class="w-full bg-accent hover:bg-accent-dark text-white font-semibold py-3.5 rounded-2xl transition-colors mt-2 flex items-center justify-center gap-2">
+          <span id="btn-trova-buddy-label">Apri Registrazione e Trova Buddy</span>
+        </button>
+
+        <p id="onboarding-error" class="hidden text-coral text-sm text-center"></p>
+      </form>
+    </section>
+
+    <section id="screen-hub" class="px-5 pt-4 pb-24 hidden">
+
+      <p class="text-sm text-ink/50 mb-6">
+        Ciao <span id="hub-username" class="font-semibold text-ink"></span> 👋<br>
+        — stai cercando compagni per <span id="hub-materia" class="font-semibold text-ink"></span> (Prof. <span id="hub-professore" class="font-semibold text-ink"></span>)
+      </p>
+
+      <div class="mb-10">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="font-display font-bold text-lg">🎯 Trova un Buddy</h2>
+          <button id="btn-refresh-buddies" class="text-xs text-accent font-semibold hover:underline">Aggiorna Lista</button>
+        </div>
+
+        <div id="buddy-loading" class="text-sm text-ink/40 py-6 text-center">Carico la lista in tempo reale…</div>
+        <div id="buddy-empty" class="hidden text-sm text-ink/40 py-6 text-center">Nessuno studia questa materia con questo prof (ancora). Ricordati di compilare il modulo e poi premi "Aggiorna Lista"!</div>
+        <div id="buddy-list" class="space-y-3"></div>
+      </div>
+
+      <div class="rounded-3xl bg-ink text-white p-5 flex items-center justify-between gap-4">
+        <div>
+          <h2 class="font-display font-bold text-lg mb-1">🧠 Arena dei Quiz</h2>
+          <p class="text-xs text-white/60">10 domande, 20 secondi l'una. Mettiti alla prova.</p>
+        </div>
+        <button id="btn-start-quiz"
+                class="shrink-0 bg-white text-ink font-semibold text-sm px-4 py-2.5 rounded-xl hover:bg-white/90 transition-colors">
+          Avvia
+        </button>
+      </div>
+    </section>
+
+    <section id="screen-quiz" class="px-5 pt-4 pb-10 hidden">
+      <div class="flex items-center justify-between mb-3">
+        <button id="btn-quiz-exit" class="text-sm text-ink/40 hover:text-ink/70">← Esci</button>
+        <span id="quiz-progress" class="text-sm font-semibold text-ink/60">Domanda 1/10</span>
+      </div>
+
+      <div class="w-full h-2 rounded-full bg-ink/10 overflow-hidden mb-6">
+        <div id="quiz-timer-bar" class="timer-bar h-full bg-mint" style="width:100%"></div>
+      </div>
+
+      <h2 id="quiz-question" class="font-display font-bold text-xl leading-snug mb-6">—</h2>
+
+      <div id="quiz-options" class="space-y-3 mb-4"></div>
+
+      <p id="quiz-feedback" class="hidden text-center text-sm font-semibold mt-2"></p>
+    </section>
+
+    <section id="screen-quiz-results" class="px-6 pt-10 pb-10 hidden text-center">
+      <div class="text-5xl mb-4">🏆</div>
+      <h2 class="font-display font-bold text-2xl mb-1">Quiz completato!</h2>
+      <p class="text-ink/60 mb-8">Hai risposto correttamente a</p>
+      <div class="font-display font-bold text-6xl text-accent mb-8">
+        <span id="quiz-score">0</span><span class="text-2xl text-ink/40">/10</span>
+      </div>
+      <div class="flex flex-col gap-3">
+        <button id="btn-quiz-retry" class="w-full bg-accent hover:bg-accent-dark text-white font-semibold py-3.5 rounded-2xl transition-colors">
+          Rifai il quiz
+        </button>
+        <button id="btn-quiz-back-hub" class="w-full bg-ink/5 hover:bg-ink/10 font-semibold py-3.5 rounded-2xl transition-colors">
+          Torna all'hub
+        </button>
+      </div>
+    </section>
+
+  </div>
+
+<script>
+/* =====================================================================
+   LINK DI COLLEGAMENTO DIRETTO CON GOOGLE SPREADSHEET
+   ===================================================================== */
+const INTERFACCIA_MODULO_GOOGLE = "https://docs.google.com/forms/d/e/1FAIpQLSd7vcSo5XSnR6GcZYk30lKUij6bkpxUhHbBguszB3296-YrrQ/viewform"; 
+
+const URL_SHEET_ISCRITTI = "https://docs.google.com/spreadsheets/d/18efUmFPGxhJUfFRj-mLRorXiAi4ZAAftaR2m9nUm6dU/gviz/tq?tqx=out:json";
+const URL_SHEET_OPZIONI = "https://docs.google.com/spreadsheets/d/18efUmFPGxhJUfFRj-mLRorXiAi4ZAAftaR2m9nUm6dU/gviz/tq?tqx=out:json&sheet=Opzioni";
+
+
+/* ---------------------------------------------------------------------
+   DOMANDE DEL QUIZ
+   --------------------------------------------------------------------- */
+const QUIZ_DOMANDE = [
+  { domanda: "Quante ossa ha lo scheletro umano adulto?", opzioni: ["186", "206", "226", "246"], corretta: 1 },
+  { domanda: "Qual è l'organo più grande del corpo umano?", opzioni: ["Fegato", "Cuore", "Pelle", "Polmoni"], corretta: 2 },
+  { domanda: "Il DNA si trova principalmente nel:", opzioni: ["Citoplasma", "Nucleo", "Ribosoma", "Golgi"], corretta: 1 },
+  { domanda: "Quale gas viene rilasciato dalle piante durante la fotosintesi?", opzioni: ["Anidride carbonica", "Azoto", "Ossigeno", "Idrogeno"], corretta: 2 },
+  { domanda: "Il femore si trova:", opzioni: ["Nel braccio", "Nella coscia", "Nel torace", "Nel cranio"], corretta: 1 },
+  { domanda: "Quale valvola separa l'atrio sinistro dal ventricolo sinistro?", opzioni: ["Tricuspide", "Mitrale", "Aortica", "Polmonare"], corretta: 1 },
+  { domanda: "Il pH del sangue arterioso è circa:", opzioni: ["6.4", "7.0", "7.4", "8.0"], corretta: 2 },
+  { domanda: "Quale cellula del sangue trasporta l'ossigeno?", opzioni: ["Leucocita", "Piastrina", "Eritrocita", "Plasmacellula"], corretta: 2 },
+  { domanda: "L'unità funzionale del rene è:", opzioni: ["L'alveolo", "Il nefrone", "Il glomo", "Il villo"], corretta: 1 },
+  { domanda: "Quale lobo cerebrale è associato principalmente alla vista?", opzioni: ["Frontale", "Parietale", "Temporale", "Occipitale"], corretta: 3 },
+];
+
+const SECONDI_PER_DOMANDA = 20;
+
+let utenteCorrente = null;
+let quizIndiceCorrente = 0;
+let quizPunteggio = 0;
+let quizTimerInterval = null;
+let quizSecondiRimasti = SECONDI_PER_DOMANDA;
+let quizRispostaBloccata = false;
+
+const SCHERMATE = {
+  onboarding: document.getElementById("screen-onboarding"),
+  hub: document.getElementById("screen-hub"),
+  quiz: document.getElementById("screen-quiz"),
+  quizResults: document.getElementById("screen-quiz-results"),
+};
+
+function mostraSchermata(nome) {
+  Object.values(SCHERMATE).forEach(el => el.classList.add("hidden"));
+  SCHERMATE[nome].classList.remove("hidden");
+  window.scrollTo({ top: 0, behavior: "instant" });
+}
+
+// Carica dinamicamente le opzioni dall'Excel prima di mostrare il form
+async function inizializzaOpzioniOnboarding() {
+  try {
+    const risposta = await fetch(URL_SHEET_OPZIONI);
+    if (!risposta.ok) throw new Error("Database opzioni non raggiungibile");
+    const testo = await risposta.text();
+    
+    const inizio = testo.indexOf("{");
+    const fine = testo.lastIndexOf("}");
+    const json = JSON.parse(testo.substring(inizio, fine + 1));
+    const righe = json.table.rows || [];
+
+    let universitaSet = new Set();
+    let materieSet = new Set();
+    let professoriSet = new Set();
+
+    // MODIFICA CRUCIALI: Escludiamo i titoli filtrando le parole esatte inserite nella riga 1
+    righe.forEach(riga => {
+      const c = riga.c;
+      if (c[0]?.v) {
+        const val = c[0].v.toString().trim();
+        if (val.toLowerCase() !== "universita" && val.toLowerCase() !== "università") universitaSet.add(val);
+      }
+      if (c[1]?.v) {
+        const val = c[1].v.toString().trim();
+        if (val.toLowerCase() !== "materia") materieSet.add(val);
+      }
+      if (c[2]?.v) {
+        const val = c[2].v.toString().trim();
+        if (val.toLowerCase() !== "professore") professoriSet.add(val);
+      }
+    });
+
+    popolaSelettore("input-universita", "Seleziona la tua università", universitaSet);
+    popolaSelettore("input-materia", "Seleziona la materia", materieSet);
+    popolaSelettore("input-professore", "Seleziona il professore", professoriSet);
+
+    document.getElementById("onboarding-loading").classList.add("hidden");
+    document.getElementById("form-onboarding").classList.remove("hidden");
+  } catch (err) {
+    console.error("Errore nel caricamento dei dati delle tendine:", err);
+    document.getElementById("onboarding-loading").innerHTML = "<p class='text-coral text-sm'>Errore nel caricamento. Controlla la connessione internet o la configurazione del Foglio 'Opzioni'.</p>";
+  }
+}
+
+function popolaSelettore(idElemento, testoDefault, setDati) {
+  const select = document.getElementById(idElemento);
+  select.innerHTML = `<option value="" disabled selected>${testoDefault}</option>`;
+  Array.from(setDati).sort().forEach(valore => {
+    const opt = document.createElement("option");
+    opt.value = valore;
+    opt.textContent = valore;
+    select.appendChild(opt);
+  });
+}
+
+document.getElementById("form-onboarding").addEventListener("submit", (e) => {
+  e.preventDefault();
+
+  const username = document.getElementById("input-username").value.trim().replace(/^@/, "");
+  const universita = document.getElementById("input-universita").value;
+  const materia = document.getElementById("input-materia").value;
+  const professore = document.getElementById("input-professore").value;
+
+  utenteCorrente = { username, universita, materia, professore };
+  localStorage.setItem("matchAccademico_profilo", JSON.stringify(utenteCorrente));
+  localStorage.setItem("matchAccademico_onboardingCompletato", "true");
+
+  window.open(INTERFACCIA_MODULO_GOOGLE, "_blank");
+  entraNellHub();
+});
+
+function entraNellHub() {
+  document.getElementById("hub-username").textContent = "@" + utenteCorrente.username;
+  document.getElementById("hub-materia").textContent = utenteCorrente.materia;
+  document.getElementById("hub-professore").textContent = utenteCorrente.professore;
+  document.getElementById("btn-reset-onboarding").classList.remove("hidden");
+
+  mostraSchermata("hub");
+  caricaBuddy();
+}
+
+document.getElementById("btn-refresh-buddies").addEventListener("click", caricaBuddy);
+
+document.getElementById("btn-reset-onboarding").addEventListener("click", () => {
+  if (confirm("Vuoi cambiare profilo? Dovrai reinserire i tuoi dati.")) {
+    localStorage.removeItem("matchAccademico_profilo");
+    localStorage.removeItem("matchAccademico_onboardingCompletato");
+    location.reload();
+  }
+});
+
+async function caricaBuddy() {
+  const loadingEl = document.getElementById("buddy-loading");
+  const emptyEl = document.getElementById("buddy-empty");
+  const listEl = document.getElementById("buddy-list");
+
+  loadingEl.classList.remove("hidden");
+  emptyEl.classList.add("hidden");
+  listEl.innerHTML = "";
+
+  let buddy = [];
+
+  try {
+    const risposta = await fetch(URL_SHEET_ISCRITTI);
+    if (!risposta.ok) throw new Error("Errore nel caricamento del file");
+    const testo = await risposta.text();
+    buddy = parseGoogleSheetJSON(testo);
+  } catch (err) {
+    console.warn("Nessun buddy trovato o errore di lettura:", err.message);
+  }
+
+  const materiaUtente = utenteCorrente.materia.trim().toLowerCase();
+  const profUtente = utenteCorrente.professore.trim().toLowerCase();
+  
+  const risultati = buddy.filter(b =>
+    b.materia.trim().toLowerCase() === materiaUtente &&
+    b.professore.trim().toLowerCase() === profUtente
+  );
+
+  loadingEl.classList.add("hidden");
+
+  if (risultati.length === 0) {
+    emptyEl.classList.remove("hidden");
+    return;
+  }
+
+  risultati.forEach((buddy, i) => {
+    const card = document.createElement("div");
+    card.className = "card-in bg-white border border-ink/10 rounded-2xl p-4 flex items-center justify-between gap-3";
+    card.style.animationDelay = (i * 60) + "ms";
+    card.innerHTML = `
+      <div class="min-w-0">
+        <p class="font-semibold truncate">@${escapeHtml(buddy.username)}</p>
+        <p class="text-xs text-ink/50 truncate">${escapeHtml(buddy.universita)} · ${escapeHtml(buddy.materia)} (Prof. ${escapeHtml(buddy.professore)})</p>
+      </div>
+      <a href="https://t.me/${encodeURIComponent(buddy.username)}" target="_blank" rel="noopener"
+         class="shrink-0 bg-mint/10 text-mint font-semibold text-xs px-3 py-2.5 rounded-xl hover:bg-mint/20 transition-colors">
+        Contatta
+      </a>
+    `;
+    listEl.appendChild(card);
+  });
+}
+
+function parseGoogleSheetJSON(testoGrezzo) {
+  const inizio = testoGrezzo.indexOf("{");
+  const fine = testoGrezzo.lastIndexOf("}");
+  const json = JSON.parse(testoGrezzo.substring(inizio, fine + 1));
+
+  const righe = json.table.rows || [];
+  return righe.map(riga => {
+    const celle = riga.c;
+    return {
+      username: (celle[1]?.v ?? "").toString().replace(/^@/, ""),
+      universita: (celle[2]?.v ?? "").toString(),
+      materia: (celle[3]?.v ?? "").toString(),
+      professore: (celle[4]?.v ?? "").toString(),
+    };
+  }).filter(b => b.username);
+}
+
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+/* =====================================================================
+   LOGICA QUIZ
+   ===================================================================== */
+document.getElementById("btn-start-quiz").addEventListener("click", avviaQuiz);
+document.getElementById("btn-quiz-retry").addEventListener("click", avviaQuiz);
+document.getElementById("btn-quiz-back-hub").addEventListener("click", () => mostraSchermata("hub"));
+document.getElementById("btn-quiz-exit").addEventListener("click", () => { fermaTimerQuiz(); mostraSchermata("hub"); });
+
+function avviaQuiz() { quizIndiceCorrente = 0; quizPunteggio = 0; mostraSchermata("quiz"); mostraDomandaCorrente(); }
+
+function mostraDomandaCorrente() {
+  quizRispostaBloccata = false;
+  const domandaCorrente = QUIZ_DOMANDE[quizIndiceCorrente];
+  document.getElementById("quiz-progress").textContent = `Domanda ${quizIndiceCorrente + 1}/${QUIZ_DOMANDE.length}`;
+  document.getElementById("quiz-question").textContent = domandaCorrente.domanda;
+  document.getElementById("quiz-feedback").classList.add("hidden");
+  
+  const optionsEl = document.getElementById("quiz-options");
+  optionsEl.innerHTML = "";
+  domandaCorrente.opzioni.forEach((opzione, indice) => {
+    const btn = document.createElement("button");
+    btn.className = "quiz-option w-full text-left bg-white border border-ink/10 rounded-2xl px-4 py-3.5 text-sm font-medium hover:border-accent transition-colors";
+    btn.textContent = opzione;
+    btn.addEventListener("click", () => rispondiQuiz(indice));
+    optionsEl.appendChild(btn);
+  });
+  avviaTimerQuiz();
+}
+
+function avviaTimerQuiz() { fermaTimerQuiz(); quizSecondiRimasti = SECONDI_PER_DOMANDA; aggiornaBarraTimer(); quizTimerInterval = setInterval(() => { quizSecondiRimasti -= 1; aggiornaBarraTimer(); if (quizSecondiRimasti <= 0) { fermaTimerQuiz(); rispondiQuiz(null); } }, 1000); }
+function fermaTimerQuiz() { if (quizTimerInterval) { clearInterval(quizTimerInterval); quizTimerInterval = null; } }
+function aggiornaBarraTimer() { const barra = document.getElementById("quiz-timer-bar"); const percentuale = Math.max(0, (quizSecondiRimasti / SECONDI_PER_DOMANDA) * 100); barra.style.width = percentuale + "%"; barra.style.backgroundColor = quizSecondiRimasti <= 5 ? "#FF6B57" : "#1FB88A"; }
+
+function rispondiQuiz(indiceScelto) {
+  if (quizRispostaBloccata) return;
+  quizRispostaBloccata = true;
+  fermaTimerQuiz();
+  const domandaCorrente = QUIZ_DOMANDE[quizIndiceCorrente];
+  const bottoni = document.querySelectorAll(".quiz-option");
+  const feedbackEl = document.getElementById("quiz-feedback");
+
+  bottoni.forEach((btn, indice) => {
+    btn.disabled = true;
+    if (indice === domandaCorrente.corretta) btn.className = "quiz-option w-full text-left border !border-mint bg-mint/10 text-mint rounded-2xl px-4 py-3.5 text-sm font-medium";
+    else if (indice === indiceScelto) btn.className = "quiz-option w-full text-left border !border-coral bg-coral/10 text-coral rounded-2xl px-4 py-3.5 text-sm font-medium";
+  });
+
+  if (indiceScelto === domandaCorrente.corretta) { quizPunteggio += 1; feedbackEl.textContent = "Corretto! 🎉"; feedbackEl.className = "text-center text-sm font-semibold mt-2 text-mint"; }
+  else if (indiceScelto === null) { feedbackEl.textContent = "Tempo scaduto ⏱️"; feedbackEl.className = "text-center text-sm font-semibold mt-2 text-coral"; }
+  else { feedbackEl.textContent = "Risposta sbagliata 😕"; feedbackEl.className = "text-center text-sm font-semibold mt-2 text-coral"; }
+  feedbackEl.classList.remove("hidden");
+
+  setTimeout(() => { quizIndiceCorrente += 1; if (quizIndiceCorrente < QUIZ_DOMANDE.length) mostraDomandaCorrente(); else mostraRisultatiQuiz(); }, 1200);
+}
+function mostraRisultatiQuiz() { document.getElementById("quiz-score").textContent = quizPunteggio; mostraSchermata("quizResults"); }
+
+(async function init() {
+  const onboardingCompletato = localStorage.getItem("matchAccademico_onboardingCompletato") === "true";
+  const profiloSalvato = localStorage.getItem("matchAccademico_profilo");
+  
+  if (onboardingCompletato && profiloSalvato) { 
+    utenteCorrente = JSON.parse(profiloSalvato); 
+    entraNellHub(); 
+  } else { 
+    mostraSchermata("onboarding");
+    await inizializzaOpzioniOnboarding();
+  }
+})();
+</script>
+</body>
+</html>
