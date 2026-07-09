@@ -5,8 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Match Accademico</title>
 
+<!-- Tailwind CSS -->
 <script src="https://cdn.tailwindcss.com"></script>
 
+<!-- Google Fonts -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
@@ -51,6 +53,7 @@
 
   <div class="max-w-md mx-auto min-h-screen bg-paper shadow-2xl relative overflow-x-hidden">
 
+    <!-- Header con pulsante per resettare il profilo locale -->
     <header class="sticky top-0 z-30 bg-paper/90 backdrop-blur border-b border-ink/5 px-5 pt-5 pb-3 flex items-center justify-between">
       <div class="flex items-center gap-2">
         <div class="w-8 h-8 rounded-xl bg-accent flex items-center justify-center text-white font-display font-bold text-sm">MA</div>
@@ -61,6 +64,7 @@
       </button>
     </header>
 
+    <!-- Schermata di Onboarding (Registrazione / Login) -->
     <section id="screen-onboarding" class="px-6 pt-6 pb-10 hidden">
       <h1 class="text-2xl font-display font-bold leading-tight mb-1">Trova chi studia<br>la tua materia.</h1>
       <p class="text-ink/60 text-sm mb-8">Seleziona i tuoi dati dall'elenco (caricato dal database), poi premi il pulsante per registrarti.</p>
@@ -70,7 +74,6 @@
       </div>
 
       <form id="form-onboarding" class="space-y-5 hidden">
-
         <div>
           <label class="block text-sm font-semibold mb-1.5" for="input-username">Username Telegram</label>
           <div class="flex items-center rounded-2xl border border-ink/10 bg-white focus-within:ring-2 focus-within:ring-accent overflow-hidden">
@@ -114,8 +117,8 @@
       </form>
     </section>
 
+    <!-- Schermata Principale (Hub dei Buddy) -->
     <section id="screen-hub" class="px-5 pt-4 pb-24 hidden">
-
       <p class="text-sm text-ink/50 mb-6">
         Ciao <span id="hub-username" class="font-semibold text-ink"></span> 👋<br>
         — stai cercando compagni per <span id="hub-materia" class="font-semibold text-ink"></span> (Prof. <span id="hub-professore" class="font-semibold text-ink"></span>)
@@ -128,10 +131,11 @@
         </div>
 
         <div id="buddy-loading" class="text-sm text-ink/40 py-6 text-center">Carico la lista in tempo reale…</div>
-        <div id="buddy-empty" class="hidden text-sm text-ink/40 py-6 text-center">Nessuno studia questa materia con questo prof (ancora). Ricordati di compilare il modulo e poi premi "Aggiorna Lista"!</div>
+        <div id="buddy-empty" class="hidden text-sm text-ink/40 py-6 text-center">Nessuno studia questa materia con questo prof (ancora). Ricordati di compilare il modulo e poi primi "Aggiorna Lista"!</div>
         <div id="buddy-list" class="space-y-3"></div>
       </div>
 
+      <!-- Card per avviare il Quiz -->
       <div class="rounded-3xl bg-ink text-white p-5 flex items-center justify-between gap-4">
         <div>
           <h2 class="font-display font-bold text-lg mb-1">🧠 Arena dei Quiz</h2>
@@ -144,6 +148,7 @@
       </div>
     </section>
 
+    <!-- Schermata del Quiz -->
     <section id="screen-quiz" class="px-5 pt-4 pb-10 hidden">
       <div class="flex items-center justify-between mb-3">
         <button id="btn-quiz-exit" class="text-sm text-ink/40 hover:text-ink/70">← Esci</button>
@@ -161,6 +166,7 @@
       <p id="quiz-feedback" class="hidden text-center text-sm font-semibold mt-2"></p>
     </section>
 
+    <!-- Schermata Risultati del Quiz -->
     <section id="screen-quiz-results" class="px-6 pt-10 pb-10 hidden text-center">
       <div class="text-5xl mb-4">🏆</div>
       <h2 class="font-display font-bold text-2xl mb-1">Quiz completato!</h2>
@@ -208,7 +214,9 @@ const QUIZ_DOMANDE = [
 
 const SECONDI_PER_DOMANDA = 20;
 
+// Variabili globali di stato
 let utenteCorrente = null;
+let listaIscritti = []; 
 let quizIndiceCorrente = 0;
 let quizPunteggio = 0;
 let quizTimerInterval = null;
@@ -231,6 +239,17 @@ function mostraSchermata(nome) {
 // Carica dinamicamente le opzioni dall'Excel prima di mostrare il form
 async function inizializzaOpzioniOnboarding() {
   try {
+    // Sincronizziamo preventivamente anche la lista degli iscritti per il controllo di login
+    try {
+      const rispostaIscritti = await fetch(URL_SHEET_ISCRITTI);
+      if (rispostaIscritti.ok) {
+        const testoIscritti = await rispostaIscritti.text();
+        listaIscritti = parseGoogleSheetJSON(testoIscritti);
+      }
+    } catch (e) {
+      console.warn("Impossibile caricare l'elenco iscritti all'avvio:", e);
+    }
+
     const risposta = await fetch(URL_SHEET_OPZIONI);
     if (!risposta.ok) throw new Error("Database opzioni non raggiungibile");
     const testo = await risposta.text();
@@ -244,9 +263,8 @@ async function inizializzaOpzioniOnboarding() {
     let materieSet = new Set();
     let professoriSet = new Set();
 
-    // MODIFICA CRUCIALI: Escludiamo i titoli filtrando le parole esatte inserite nella riga 1
     righe.forEach(riga => {
-      const c = riga.c;
+      const c = riga?.c || []; 
       if (c[0]?.v) {
         const val = c[0].v.toString().trim();
         if (val.toLowerCase() !== "universita" && val.toLowerCase() !== "università") universitaSet.add(val);
@@ -284,6 +302,7 @@ function popolaSelettore(idElemento, testoDefault, setDati) {
   });
 }
 
+// Gestore Onboarding Intelligente con controllo sul database
 document.getElementById("form-onboarding").addEventListener("submit", (e) => {
     e.preventDefault();
 
@@ -296,6 +315,7 @@ document.getElementById("form-onboarding").addEventListener("submit", (e) => {
     localStorage.setItem("matchAccademico_profilo", JSON.stringify(utenteCorrente));
     localStorage.setItem("matchAccademico_onboardingCompletato", "true");
 
+    // Verifica la presenza dell'utente nella lista caricata, ignorando chiocciole e maiuscole
     const utenteGiaEsistente = listaIscritti.some(iscritto => {
         const nomePulitoDB = Object.values(iscritto).join(" ").toLowerCase().replace('@', '').trim();
         const nomePulitoInput = username.toLowerCase().trim();
@@ -309,7 +329,6 @@ document.getElementById("form-onboarding").addEventListener("submit", (e) => {
         entraNellHub();
     }
 });
-
 
 function entraNellHub() {
   document.getElementById("hub-username").textContent = "@" + utenteCorrente.username;
@@ -347,6 +366,7 @@ async function caricaBuddy() {
     if (!risposta.ok) throw new Error("Errore nel caricamento del file");
     const testo = await risposta.text();
     buddy = parseGoogleSheetJSON(testo);
+    listaIscritti = buddy; // Tiene sincronizzata la lista globale
   } catch (err) {
     console.warn("Nessun buddy trovato o errore di lettura:", err.message);
   }
@@ -354,12 +374,12 @@ async function caricaBuddy() {
   const materiaUtente = utenteCorrente.materia.trim().toLowerCase();
   const profUtente = utenteCorrente.professore.trim().toLowerCase();
   
-      const risultati = buddy.filter(b => 
-        b.materia.trim().toLowerCase() === materiaUtente &&
-        b.professore.trim().toLowerCase() === profUtente &&
-        b.username.toLowerCase().replace('@', '').trim() !== utenteCorrente.username.toLowerCase().replace('@', '').trim()
-    );
-
+  // Filtro compagni escludendo se stessi con controllo preciso e senza chiocciole
+  const risultati = buddy.filter(b => 
+    b.materia.trim().toLowerCase() === materiaUtente &&
+    b.professore.trim().toLowerCase() === profUtente &&
+    b.username.toLowerCase().replace('@', '').trim() !== utenteCorrente.username.toLowerCase().replace('@', '').trim()
+  );
 
   loadingEl.classList.add("hidden");
 
@@ -393,7 +413,7 @@ function parseGoogleSheetJSON(testoGrezzo) {
 
   const righe = json.table.rows || [];
   return righe.map(riga => {
-    const celle = riga.c;
+    const celle = riga?.c || []; 
     return {
       username: (celle[1]?.v ?? "").toString().replace(/^@/, ""),
       universita: (celle[2]?.v ?? "").toString(),
@@ -410,7 +430,7 @@ function escapeHtml(str) {
 }
 
 /* =====================================================================
-   LOGICA QUIZ
+   LOGICA DEL QUIZ
    ===================================================================== */
 document.getElementById("btn-start-quiz").addEventListener("click", avviaQuiz);
 document.getElementById("btn-quiz-retry").addEventListener("click", avviaQuiz);
@@ -465,6 +485,7 @@ function rispondiQuiz(indiceScelto) {
 }
 function mostraRisultatiQuiz() { document.getElementById("quiz-score").textContent = quizPunteggio; mostraSchermata("quizResults"); }
 
+// Funzione di Inizializzazione Generale all'Avvio
 (async function init() {
   const onboardingCompletato = localStorage.getItem("matchAccademico_onboardingCompletato") === "true";
   const profiloSalvato = localStorage.getItem("matchAccademico_profilo");
@@ -480,3 +501,4 @@ function mostraRisultatiQuiz() { document.getElementById("quiz-score").textConte
 </script>
 </body>
 </html>
+
