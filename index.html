@@ -296,8 +296,16 @@ document.getElementById("form-onboarding").addEventListener("submit", (e) => {
   localStorage.setItem("matchAccademico_profilo", JSON.stringify(utenteCorrente));
   localStorage.setItem("matchAccademico_onboardingCompletato", "true");
 
-  window.open(INTERFACCIA_MODULO_GOOGLE, "_blank");
-  entraNellHub();
+  const utenteGiaEsistente = listaIscritti.some(iscritto => 
+    iscritto.username.toLowerCase().trim().replace('@', '') === username.toLowerCase().trim().replace('@', '')
+);
+if (utenteGiaEsistente) {
+    entraNellHub();
+} else {
+    window.open(INTERFACCIA_MODULO_GOOGLE, "_blank");
+    entraNellHub();
+}
+
 });
 
 function entraNellHub() {
