@@ -296,9 +296,11 @@ document.getElementById("form-onboarding").addEventListener("submit", (e) => {
   localStorage.setItem("matchAccademico_profilo", JSON.stringify(utenteCorrente));
   localStorage.setItem("matchAccademico_onboardingCompletato", "true");
 
-  const utenteGiaEsistente = listaIscritti.some(iscritto => 
-      iscritto.username.toLowerCase().trim().replace('@', '') === username.toLowerCase().trim()
-  );
+      const utenteGiaEsistente = listaIscritti.some(iscritto => {
+        const nomeDatabase = Object.values(iscritto).join(" ").toLowerCase();
+        return nomeDatabase.includes(username.toLowerCase());
+    });
+
 
 if (utenteGiaEsistente) {
     entraNellHub();
