@@ -296,10 +296,12 @@ document.getElementById("form-onboarding").addEventListener("submit", (e) => {
   localStorage.setItem("matchAccademico_profilo", JSON.stringify(utenteCorrente));
   localStorage.setItem("matchAccademico_onboardingCompletato", "true");
 
-      const utenteGiaEsistente = listaIscritti.some(iscritto => {
-        const nomeDatabase = Object.values(iscritto).join(" ").toLowerCase();
-        return nomeDatabase.includes(username.toLowerCase());
+          const utenteGiaEsistente = listaIscritti.some(iscritto => {
+        const nomePulitoDB = Object.values(iscritto).join(" ").toLowerCase().replace('@', '').trim();
+        const nomePulitoInput = username.toLowerCase().trim();
+        return nomePulitoDB.includes(nomePulitoInput);
     });
+
 
 
 if (utenteGiaEsistente) {
@@ -354,10 +356,12 @@ async function caricaBuddy() {
   const materiaUtente = utenteCorrente.materia.trim().toLowerCase();
   const profUtente = utenteCorrente.professore.trim().toLowerCase();
   
-  const risultati = buddy.filter(b =>
-    b.materia.trim().toLowerCase() === materiaUtente &&
-    b.professore.trim().toLowerCase() === profUtente
-  );
+      const risultati = buddy.filter(b => 
+        b.materia.trim().toLowerCase() === materiaUtente &&
+        b.professore.trim().toLowerCase() === profUtente &&
+        b.username.toLowerCase().replace('@', '').trim() !== utenteCorrente.username.toLowerCase().replace('@', '').trim()
+    );
+
 
   loadingEl.classList.add("hidden");
 
