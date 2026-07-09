@@ -297,8 +297,9 @@ document.getElementById("form-onboarding").addEventListener("submit", (e) => {
   localStorage.setItem("matchAccademico_onboardingCompletato", "true");
 
   const utenteGiaEsistente = listaIscritti.some(iscritto => 
-    iscritto.username.toLowerCase().trim().replace('@', '') === username.toLowerCase().trim().replace('@', '')
-);
+      iscritto.username.toLowerCase().trim().replace('@', '') === username.toLowerCase().trim()
+  );
+
 if (utenteGiaEsistente) {
     entraNellHub();
 } else {
