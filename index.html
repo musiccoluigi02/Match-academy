@@ -285,33 +285,31 @@ function popolaSelettore(idElemento, testoDefault, setDati) {
 }
 
 document.getElementById("form-onboarding").addEventListener("submit", (e) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  const username = document.getElementById("input-username").value.trim().replace(/^@/, "");
-  const universita = document.getElementById("input-universita").value;
-  const materia = document.getElementById("input-materia").value;
-  const professore = document.getElementById("input-professore").value;
+    const username = document.getElementById("input-username").value.trim().replace(/^@/, "");
+    const universita = document.getElementById("input-universita").value;
+    const materia = document.getElementById("input-materia").value;
+    const professore = document.getElementById("input-professore").value;
 
-  utenteCorrente = { username, universita, materia, professore };
-  localStorage.setItem("matchAccademico_profilo", JSON.stringify(utenteCorrente));
-  localStorage.setItem("matchAccademico_onboardingCompletato", "true");
+    utenteCorrente = { username, universita, materia, professore };
+    localStorage.setItem("matchAccademico_profilo", JSON.stringify(utenteCorrente));
+    localStorage.setItem("matchAccademico_onboardingCompletato", "true");
 
-          const utenteGiaEsistente = listaIscritti.some(iscritto => {
+    const utenteGiaEsistente = listaIscritti.some(iscritto => {
         const nomePulitoDB = Object.values(iscritto).join(" ").toLowerCase().replace('@', '').trim();
         const nomePulitoInput = username.toLowerCase().trim();
         return nomePulitoDB.includes(nomePulitoInput);
-    };
+    });
 
-
-
-if (utenteGiaEsistente) {
-    entraNellHub();
-} else {
-    window.open(INTERFACCIA_MODULO_GOOGLE, "_blank");
-    entraNellHub();
-}
-
+    if (utenteGiaEsistente) {
+        entraNellHub();
+    } else {
+        window.open(INTERFACCIA_MODULO_GOOGLE, "_blank");
+        entraNellHub();
+    }
 });
+
 
 function entraNellHub() {
   document.getElementById("hub-username").textContent = "@" + utenteCorrente.username;
